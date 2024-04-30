@@ -37,12 +37,12 @@ curl -H "Content-Type: application/json" http://localhost:8080/prompt \
 
 > All in containers
 ```bash
-HTTP_PORT=8888 LLM=phi3 OLLAMA_BASE_URL=http://ollama:11434 docker compose --profile container up --build
+HTTP_PORT=8888 LLM=deepseek-coder OLLAMA_BASE_URL=http://ollama:11434 docker compose --profile container up --build
 ```
 
 > Use the Ollama local install (like on macOS)
 ```bash
-HTTP_PORT=8888 LLM=phi3 OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose --profile webapp up --build
+HTTP_PORT=8888 LLM=deepseek-coder OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose --profile webapp up --build
 ```
 
 ## Development mode
@@ -51,11 +51,11 @@ For developping the application, use the `watch` command of Docker Compose
 
 > All in containers
 ```bash
-HTTP_PORT=8888 LLM=phi3 OLLAMA_BASE_URL=http://ollama:11434 docker compose --profile container watch
+HTTP_PORT=8888 LLM=deepseek-coder OLLAMA_BASE_URL=http://ollama:11434 docker compose --profile container watch
 ```
 > Use the Ollama local install (like on macOS)
 ```bash
-HTTP_PORT=8888 LLM=phi3 OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose --profile webapp watch
+HTTP_PORT=8888 LLM=deepseek-coder OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose --profile webapp watch
 ```
 
 
@@ -90,7 +90,5 @@ To run your application:
 > ```bash
 > sudo chmod 666 /var/run/docker.sock
 > ```
-
-
 
 

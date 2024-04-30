@@ -24,7 +24,6 @@ COPY --from=builder target/*-fat.jar app.jar
 COPY webroot /webroot
 COPY documents /documents
 
-
 EXPOSE 8888
 ENTRYPOINT [ "java", "-jar", "app.jar" ]
 

@@ -31,17 +31,16 @@
       <div class="field">
         <label class="label">System:</label>
         <div class="control">
-          <textarea id="txt_system" class="textarea" placeholder="System message" rows="5"></textarea>
+          <textarea id="txt_system" class="textarea" placeholder="System message"></textarea>
         </div>
       </div>
-      <!--
+
       <div class="field">
         <label class="label">Context:</label>
         <div class="control">
           <textarea id="txt_context" class="textarea" placeholder="Content of the context"></textarea>
         </div>
       </div>
-      -->
 
       <div class="field">
         <label class="label">Human:</label>
@@ -113,17 +112,15 @@
 
     <script type="module">
       // Default values
-      const human_message = `Who are the players of Chronicles of Aethelgard? Give details for every player.`
-      
-      // Who are the monsters of Chronicles of Aethelgard? Give details for every monster.
-      
-      const system_message = `You are the dungeon master, 
-expert at interpreting and answering questions based on provided sources.
-Using the provided context, answer the user's question 
-to the best of your ability using only the resources provided. 
-Be verbose!`
+      const human_message = `I need a clear explanation regarding my following question:
+Can you create a "hello world" program in Golang?
+And, please, be structured with bullet points.
+    `
+      const system_message = `You are an expert in computer programming.
+Please make friendly answer for the noobs.
+Add source code examples if you can.`
 
-      //const context_message = `<context></context>`
+      const context_message = `<context></context>`
 
 
       // https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
@@ -137,12 +134,15 @@ Be verbose!`
       let btnDownload = document.querySelector("#btn_download")
 
       let txtPrompt = document.querySelector("#txt_prompt")
-      //let txtContext = document.querySelector("#txt_context")
+      let txtContext = document.querySelector("#txt_context")
       let txtSystem = document.querySelector("#txt_system")
 
       txtPrompt.innerHTML = human_message
       txtSystem.innerHTML = system_message
-      //txtContext.innerHTML = context_message
+      txtContext.innerHTML = context_message
+
+
+
 
       let txtResponse = document.querySelector("#txt_response")
 
@@ -173,7 +173,7 @@ Be verbose!`
             body: JSON.stringify({
               question: txtPrompt.value,
               system: txtSystem.value,
-              //context: txtContext.value
+              context: txtContext.value
             }),
             signal: aborter.signal
           })
@@ -192,7 +192,7 @@ Be verbose!`
 
             if (done) {
               // Do something with last chunk of data then exit reader
-              //txtPrompt.value = ""
+              txtPrompt.value = ""
 
               responseText = responseText + "\n"
               txtResponse.innerHTML = markdownit().render(responseText)

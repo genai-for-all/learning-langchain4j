@@ -33,8 +33,6 @@ services:
         - action: rebuild
           path: ./webroot
         - action: rebuild
-          path: ./documents
-        - action: rebuild
           path: ./src
 
 volumes:
