@@ -80,3 +80,5 @@ Each player has three attributes: Strength, Dexterity, and Intelligence. Roll 2d
   - Tactics: Use fire, lightning, or other elemental attacks, fly above enemies, roar to demoralize.
   - Flavor: Majestic beasts with shimmering scales, razor-sharp claws, and wings that blot out the sky. They speak in booming voices, demanding respect and tribute from lesser creatures.
 
+
+

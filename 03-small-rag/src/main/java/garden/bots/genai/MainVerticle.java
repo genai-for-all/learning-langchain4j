@@ -36,9 +36,6 @@ import java.util.*;
 
 import static dev.langchain4j.data.document.loader.FileSystemDocumentLoader.*;
 
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
-
 import static dev.langchain4j.data.message.SystemMessage.systemMessage;
 
 public class MainVerticle extends AbstractVerticle {
@@ -49,58 +46,60 @@ public class MainVerticle extends AbstractVerticle {
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
 
-    //Logger logger = LoggerFactory.getLogger(MainVerticle.class);
-    
-    // Load the document to use for RAG:
-    System.out.println( "Execution directory:" + System.getProperty("user.dir"));
-    //List of all files and directories
+    // ----------------------------------------
+    // 📝 Load the document to use it for RAG
+    // ----------------------------------------
+    System.out.println("🤖 Execution directory:" + System.getProperty("user.dir"));
     File directoryPath = new File(System.getProperty("user.dir")+"/documents");
-    System.out.println("-->>" + directoryPath.toPath());
-    String contents[] = directoryPath.list();
-    System.out.println("List of files and directories in the specified directory:");
-    for(int i=0; i<contents.length; i++) {
-        System.out.println(contents[i]);
-    }
-
     TextDocumentParser documentParser = new TextDocumentParser();
     Document document = loadDocument(directoryPath.toPath()+"/rules.md", documentParser);
+    System.out.println("🤖 Document is loaded: " + document);
 
-    System.out.println("Document is loaded ==>>" + document);
-
-    // Now, we need to split this document into smaller segments, also known as "chunks."
-    // This approach allows us to send only relevant segments to the LLM in response to a user query,
-    // rather than the entire document. For instance, if a user asks about cancellation policies,
-    // we will identify and send only those segments related to cancellation.
-    // A good starting point is to use a recursive document splitter that initially attempts
-    // to split by paragraphs. If a paragraph is too large to fit into a single segment,
-    // the splitter will recursively divide it by newlines, then by sentences, and finally by words,
-    // if necessary, to ensure each piece of text fits into a single segment.
+    /*
+      We need to split this document into smaller segments, also known as "chunks."
+      This approach allows us to send only relevant segments to the LLM in response to a user query,
+      rather than the entire document. 
+    */
+    // ----------------------------------------
+    // 📝📝📝 Create chunks from the document
+    // ----------------------------------------
     DocumentSplitter splitter = DocumentSplitters.recursive(1536, 128);
     List<TextSegment> segments = splitter.split(document);
 
-    System.out.println("Segments ++>>" + segments);
+    System.out.println("🧩 chunks/segments: " + segments);
 
-    // Now, we need to embed (also known as "vectorize") these segments.
-    // Embedding is needed for performing similarity searches.
-    // For this example, we'll use a local in-process embedding model, but you can choose any supported model.
+    /*
+      Now, we need to embed (also known as "vectorize") these segments.
+      Embedding is needed for performing similarity searches.
+      LLM embeddings are numerical representations of words or text captured by the LLM, 
+      encoding their meaning and relationships in a high-dimensional space.
+    */
+    // ----------------------------------------
+    // 📙 Create embeddings
+    // ----------------------------------------
     EmbeddingModel embeddingModel = new BgeSmallEnV15QuantizedEmbeddingModel();
     List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
 
-    System.out.println("Embeddings ++>>" + embeddings);
+    System.out.println("📙 embeddings:" + embeddings);
 
-    // Next, we will store these embeddings in an embedding store (also known as a "vector database").
-    // This store will be used to search for relevant segments during each interaction with the LLM.
-    // For simplicity, this example uses an in-memory embedding store, but you can choose from any supported store.
+    /*
+      Next, we will store these embeddings in an embedding store (also known as a "vector database").
+      This store will be used to search for relevant segments during each interaction with the LLM.
+      For simplicity, this example uses an in-memory embedding store.
+    */
+    // ----------------------------------------
+    // 📦 Store embeddings in a vector db
+    // ----------------------------------------
     EmbeddingStore<TextSegment> embeddingStore = new InMemoryEmbeddingStore<>();
     embeddingStore.addAll(embeddings, segments);
 
-    System.out.println("EmbeddingStore ++>>" + embeddingStore);
+    System.out.println("📦 embedding store: " + embeddingStore);
 
-    // The content retriever is responsible for retrieving relevant content based on a user query.
+    // 🔎 The content retriever is responsible for retrieving relevant content based on a user query.
     ContentRetriever contentRetriever = EmbeddingStoreContentRetriever.builder()
             .embeddingStore(embeddingStore)
             .embeddingModel(embeddingModel)
-            .maxResults(10) // on each interaction we will retrieve the 2 most relevant segments
+            .maxResults(10) // on each interaction we will retrieve the 10 most relevant segments
             .minScore(0.8) // we want to retrieve segments at least somewhat similar to user query
             .build();
 
@@ -111,10 +110,9 @@ public class MainVerticle extends AbstractVerticle {
     var staticPath = Optional.ofNullable(System.getenv("STATIC_PATH")).orElse("/*");
     var httpPort = Optional.ofNullable(System.getenv("HTTP_PORT")).orElse("8888");
 
-    //https://docs.langchain4j.dev/apidocs/dev/langchain4j/model/ollama/OllamaStreamingChatModel.html
     StreamingChatLanguageModel streamingModel = OllamaStreamingChatModel.builder()
       .baseUrl(llmBaseUrl)
-      .modelName(modelName).temperature(0.0).repeatPenalty(1.0)
+      .modelName(modelName).temperature(0.8).repeatPenalty(1.0)
       .build();
 
     var memory = MessageWindowChatMemory.withMaxMessages(5);
@@ -150,36 +148,54 @@ public class MainVerticle extends AbstractVerticle {
         .end("👋 request aborted");
     });
 
+    router.get("/model").handler(ctx -> {
+      ctx.response()
+        .putHeader("Content-Type", "application/json;charset=utf-8")
+        .end("{\"model\":\""+modelName+"\",\"url\":\""+llmBaseUrl+"\"}");
+    });
+
+
     router.post("/prompt").handler(ctx -> {
 
       var question = ctx.body().asJsonObject().getString("question");
       var systemContent = ctx.body().asJsonObject().getString("system");
-      //var contextContent = ctx.body().asJsonObject().getString("context");
 
+      // ----------------------------------------
+      // 📝 Prepare message for the prompt
+      // ----------------------------------------
       SystemMessage systemInstructions = systemMessage(systemContent);
       UserMessage humanMessage = UserMessage.userMessage(question);
 
-
+      // ----------------------------------------
+      // 🔎 search similarities in the vector db
+      // ----------------------------------------
       var similarities = contentRetriever.retrieve(new Query(question));
-      System.out.println("*** Similarities:" + similarities);
+      System.out.println("🔎 similarities: " + similarities);
 
+      // ----------------------------------------
+      // 📝📝📝 Create context with similarities
+      // ----------------------------------------
       StringBuilder content = new StringBuilder();
       content.append("<content>");
-
       similarities.forEach(similarity -> {
-        System.out.println("- Similarity:" + similarity);
         content.append("<doc>"+similarity.toString()+"</doc>");
       });
       content.append("</content>");
 
-      SystemMessage contextMessage = systemMessage(content.toString()); // 🤔
+      SystemMessage contextMessage = systemMessage(content.toString());
 
+      // ----------------------------------------
+      // 📝 Create the prompt
+      // ----------------------------------------
       List<ChatMessage> messages = new ArrayList<>();
       messages.add(systemInstructions);
       messages.addAll(memory.messages());
       messages.add(contextMessage);
       messages.add(humanMessage);
 
+      // ----------------------------------------
+      // 🧠 Update the memory of the conversation
+      // ----------------------------------------
       memory.add(humanMessage);
 
       HttpServerResponse response = ctx.response();
@@ -188,11 +204,13 @@ public class MainVerticle extends AbstractVerticle {
         .putHeader("Content-Type", "application/octet-stream")
         .setChunked(true);
 
+      // ----------------------------------------
+      // 🤖 Generate the completion (stream)
+      // ----------------------------------------
       streamingModel.generate(messages, new StreamingResponseHandler<AiMessage>() {
         @Override
         public void onNext(String token) {
           if (cancelRequest) {
-            // https://github.com/langchain4j/langchain4j/issues/245
             cancelRequest = false;
             throw new RuntimeException("🤬 Shut up!");
           }
@@ -216,7 +234,6 @@ public class MainVerticle extends AbstractVerticle {
       });
 
     });
-
 
     // Create an HTTP server
     var server = vertx.createHttpServer();

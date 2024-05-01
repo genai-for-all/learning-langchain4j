@@ -6,7 +6,8 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "vscjava.vscode-java-pack"
+                "vscjava.vscode-java-pack",
+                "gitpod.gitpod-theme"
             ]
         }
     }

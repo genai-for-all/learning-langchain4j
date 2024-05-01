@@ -3,12 +3,10 @@ package garden.bots.genai;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.StreamingResponseHandler;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
-import dev.langchain4j.model.input.PromptTemplate;
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import dev.langchain4j.model.output.Response;
 import io.vertx.core.AbstractVerticle;
@@ -21,10 +19,6 @@ import io.vertx.ext.web.handler.StaticHandler;
 
 import java.util.*;
 
-import org.w3c.dom.Text;
-
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
 
 import static dev.langchain4j.data.message.SystemMessage.systemMessage;
 
@@ -36,7 +30,6 @@ public class MainVerticle extends AbstractVerticle {
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
 
-    //Logger logger = LoggerFactory.getLogger(MainVerticle.class);
 
     var llmBaseUrl = Optional.ofNullable(System.getenv("OLLAMA_BASE_URL")).orElse("http://localhost:11434");
     var modelName = Optional.ofNullable(System.getenv("LLM")).orElse("deepseek-coder");
@@ -50,12 +43,10 @@ public class MainVerticle extends AbstractVerticle {
       .modelName(modelName).temperature(0.0).repeatPenalty(1.0)
       .build();
 
+    // ----------------------------------------
+    // 🧠 Keep the memory of the conversation
+    // ----------------------------------------
     var memory = MessageWindowChatMemory.withMaxMessages(5);
-
-    PromptTemplate humanPromptTemplate = PromptTemplate.from("""
-      I need a clear explanation regarding my {{question}}.
-      And, please, be structured with bullet points.
-      """);
 
     Router router = Router.router(vertx);
 
@@ -80,6 +71,13 @@ public class MainVerticle extends AbstractVerticle {
         .end(messages.encodePrettily());
     });
 
+    router.get("/model").handler(ctx -> {
+      ctx.response()
+        .putHeader("Content-Type", "application/json;charset=utf-8")
+        .end("{\"model\":\""+modelName+"\",\"url\":\""+llmBaseUrl+"\"}");
+    });
+
+
     router.delete("/cancel-request").handler(ctx -> {
       cancelRequest = true;
       ctx.response()
@@ -93,10 +91,12 @@ public class MainVerticle extends AbstractVerticle {
       var systemContent = ctx.body().asJsonObject().getString("system");
       var contextContent = ctx.body().asJsonObject().getString("context");
 
+      // ----------------------------------------
+      // 📝 Build the prompt
+      // ----------------------------------------
       SystemMessage systemInstructions = systemMessage(systemContent);
+      SystemMessage contextMessage = systemMessage(contextContent);
       UserMessage humanMessage = UserMessage.userMessage(question);
-
-      SystemMessage contextMessage = systemMessage(contextContent); // 🤔
 
       List<ChatMessage> messages = new ArrayList<>();
       messages.add(systemInstructions);
@@ -104,6 +104,9 @@ public class MainVerticle extends AbstractVerticle {
       messages.add(contextMessage);
       messages.add(humanMessage);
 
+      // ----------------------------------------
+      // 🧠 Update the memory of the conversation
+      // ----------------------------------------
       memory.add(humanMessage);
 
       HttpServerResponse response = ctx.response();
@@ -112,11 +115,13 @@ public class MainVerticle extends AbstractVerticle {
         .putHeader("Content-Type", "application/octet-stream")
         .setChunked(true);
 
+      // ----------------------------------------
+      // 🤖 Generate the completion (stream)
+      // ----------------------------------------
       streamingModel.generate(messages, new StreamingResponseHandler<AiMessage>() {
         @Override
         public void onNext(String token) {
           if (cancelRequest) {
-            // https://github.com/langchain4j/langchain4j/issues/245
             cancelRequest = false;
             throw new RuntimeException("🤬 Shut up!");
           }

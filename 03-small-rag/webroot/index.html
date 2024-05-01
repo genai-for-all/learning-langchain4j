@@ -23,6 +23,7 @@
         <p class="subtitle is-3">
           With Vert-x, LangChain4J & Docker Compose
         </p>
+        <span id="model_name" class="tag is-dark"></span>
       </div>
     </div>
 
@@ -112,6 +113,26 @@
     </div>
 
     <script type="module">
+
+      let modelName = document.querySelector("#model_name")
+      try {
+        const response = await fetch("/model", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            }
+          })
+        
+        const data = await response.json()
+
+        modelName.innerHTML = data.model + " | " + data.url
+
+        console.log(data)
+
+      } catch (error) {
+        console.log("😡", error) 
+      }
+
       // Default values
       const human_message = `Who are the players of Chronicles of Aethelgard? Give details for every player.`
       

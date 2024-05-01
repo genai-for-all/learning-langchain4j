@@ -91,6 +91,3 @@ To run your application:
 > sudo chmod 666 /var/run/docker.sock
 > ```
 
-
-
-

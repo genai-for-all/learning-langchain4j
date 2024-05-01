@@ -23,10 +23,26 @@
         <p class="subtitle is-3">
           With Vert-x, LangChain4J & Docker Compose
         </p>
+        <span id="model_name" class="tag is-dark"></span>
       </div>
     </div>
 
+
     <div class="container">
+      
+      <div class="content">
+        <div class="field is-grouped">
+  
+          <div class="control">
+            <button id="btn_little_teacher" class="button is-link is-small">Demo 👨🏻‍🏫 Little Teacher</button>
+          </div>
+  
+          <div class="control">
+            <button id="btn_star_trek" class="button is-link is-info is-small">Demo 🖖 Star Trek</button>
+          </div>
+  
+        </div>
+      </div>
 
       <div class="field">
         <label class="label">System:</label>
@@ -111,17 +127,30 @@
     </div>
 
     <script type="module">
+
+      let modelName = document.querySelector("#model_name")
+      try {
+        const response = await fetch("/model", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            }
+          })
+        
+        const data = await response.json()
+
+        modelName.innerHTML = data.model + " | " + data.url
+
+        console.log(data)
+
+      } catch (error) {
+        console.log("😡", error) 
+      }
+
       // Default values
-      const human_message = `I need a clear explanation regarding my following question:
-Can you create a "hello world" program in Golang?
-And, please, be structured with bullet points.
-    `
-      const system_message = `You are an expert in computer programming.
-Please make friendly answer for the noobs.
-Add source code examples if you can.`
-
+      const human_message = ``
+      const system_message = ``
       const context_message = `<context></context>`
-
 
       // https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
 
@@ -133,6 +162,11 @@ Add source code examples if you can.`
       let btnCopy = document.querySelector("#btn_copy")
       let btnDownload = document.querySelector("#btn_download")
 
+      let btnLittleTeacher = document.querySelector("#btn_little_teacher")
+      let btnStarTrek = document.querySelector("#btn_star_trek")
+      
+
+
       let txtPrompt = document.querySelector("#txt_prompt")
       let txtContext = document.querySelector("#txt_context")
       let txtSystem = document.querySelector("#txt_system")
@@ -141,8 +175,30 @@ Add source code examples if you can.`
       txtSystem.innerHTML = system_message
       txtContext.innerHTML = context_message
 
+      btnLittleTeacher.addEventListener("click", async _ => {
+        txtPrompt.innerHTML = `I need a clear explanation regarding my following question:
+Can you create a "hello world" program in Golang?
+And, please, be structured with bullet points`
+        txtSystem.innerHTML = `You are an expert in computer programming.
+Please make friendly answer for the noobs.
+Add source code examples if you can.`
+        txtContext.innerHTML = context_message
+      })
 
-
+      btnStarTrek.addEventListener("click", async _ => {
+        txtPrompt.innerHTML = `[In Layman’s Terms] Who is Jean-Luc Picard?`
+        txtSystem.innerHTML = `You are an AI assistant. Your name is Seven. 
+Some people are calling you Seven of Nine.
+You are an expert in Star Trek.
+All questions are about Star Trek.
+Using the provided context, answer the user's question
+to the best of your ability using only the resources provided.`
+        txtContext.innerHTML = `<context>
+- Michael Burnham is the captain of the starship Discovery.
+- James T. Kirk is the captain of the starship USS Enterprise.  
+- Philippe Charrière is the captain of the starship USS Marvelous.
+</context>`
+      })
 
       let txtResponse = document.querySelector("#txt_response")
 
