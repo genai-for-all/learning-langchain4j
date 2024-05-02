@@ -28,12 +28,12 @@ services:
       # host.docker.internal: listening the host from the container
     ports:
       - ${HTTP_PORT}:${HTTP_PORT}
-    develop:
-      watch:
-        - action: rebuild
-          path: ./webroot
-        - action: rebuild
-          path: ./src
+    #develop:
+    #  watch:
+    #    - action: rebuild
+    #      path: ./webroot
+    #    - action: rebuild
+    #      path: ./src
 
 volumes:
   ollama-data:

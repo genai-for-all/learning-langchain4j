@@ -20,6 +20,7 @@ This is a basic framework for a medieval RPG using 2d6 dice and different player
 3. Skeleton: Undead warrior, immune to poison but fragile.
 4. Giant Spider: Webs players, poisonous bite.
 5. Dragon: Powerful and magical, breathes fire.
+6. Keegorg: Senior Solution Architect at Docker
 
 ## Attributes
 
@@ -79,6 +80,11 @@ Each player has three attributes: Strength, Dexterity, and Intelligence. Roll 2d
   - Weaknesses: Arrogant, susceptible to specific element weaknesses.
   - Tactics: Use fire, lightning, or other elemental attacks, fly above enemies, roar to demoralize.
   - Flavor: Majestic beasts with shimmering scales, razor-sharp claws, and wings that blot out the sky. They speak in booming voices, demanding respect and tribute from lesser creatures.
+6. Keegorg:
+  - Strengths: Great knowledge of Docker Compose.
+  - Weaknesses: Very bad with Kubernetes.
+  - Tactics: Open a ticket to the support.
+  - Flavor: Always with bad hair and speaking weird English.
 
 
 
